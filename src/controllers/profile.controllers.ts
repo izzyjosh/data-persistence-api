@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { StatusCodes } from "http-status-codes";
+
 import { profileService } from "../services/genderize.services";
 import { successResponse } from "../utils/responses";
 
@@ -13,7 +13,7 @@ class ProfileController {
       const name = (req as any).validatedBody.name;
       const result = await profileService.classify(name);
       res
-        .status(StatusCodes.OK)
+        .status(result.statusCode)
         .json(successResponse(result.profile, result.message));
     } catch (error) {
       next(error);

@@ -10,10 +10,12 @@ import {
   NationalizeResponse,
   NationalizeCountry,
 } from "../schemas/profile.schemas";
+import { StatusCodes } from "http-status-codes";
 
 type ClassifyResult = {
   profile: ProfileResponseDTO;
   message?: string;
+  statusCode: number;
 };
 
 class ProfileService {
@@ -37,6 +39,7 @@ class ProfileService {
         return {
           profile: profileResponseSchema.parse(profile),
           message: "Profile already exists",
+          statusCode: StatusCodes.OK,
         };
       }
 
@@ -95,6 +98,7 @@ class ProfileService {
 
       return {
         profile: profileResponseSchema.parse(newProfile),
+        statusCode: StatusCodes.CREATED,
       };
     } catch (error: any) {
       if (error instanceof BadGatewayError) {

@@ -29,7 +29,7 @@ app.use("/api/", profileRouter);
 app.get("/", (req, res) => {
   const response = {
     status: "success",
-    message: "Welcome to the Genderize API Processing Service!",
+    message: "Welcome to the Data Persistence API Processing Service!",
   };
   res.status(StatusCodes.OK).json(response);
 });

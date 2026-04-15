@@ -38,15 +38,6 @@ app.get("/", (req, res) => {
 app.use(NotFoundErrorHandler);
 app.use(RequestErrorHandler);
 
-(async () => {
-  try {
-    await AppDataSource.initialize();
-    sysLogger.info("Database connected successfully");
-
-    app.listen(port, () => {
-      sysLogger.info(`Server is running on port ${port}`);
-    });
-  } catch (error) {
-    sysLogger.error(`Error occurred while connecting to the server: ${error}`);
-  }
-})();
+app.listen(port, () => {
+  sysLogger.info(`Server is running on port ${port}`);
+});

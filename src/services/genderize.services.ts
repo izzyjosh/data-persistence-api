@@ -13,6 +13,7 @@ import {
   listProfileSchema,
 } from "../schemas/profile.schemas";
 import { StatusCodes } from "http-status-codes";
+import { initDB } from "../config/init-db";
 
 type ClassifyResult = {
   profile: ProfileResponseDTO;
@@ -21,10 +22,13 @@ type ClassifyResult = {
 };
 
 class ProfileService {
-  private readonly profileRepository = AppDataSource.getRepository(Profile);
   private readonly genderize = "https://api.genderize.io";
   private readonly agify = "https://api.agify.io";
   private readonly nationalize = "https://api.nationalize.io";
+
+  private get profileRepository() {
+    return AppDataSource.getRepository(Profile);
+  }
 
   ageGrouping(age: number): string {
     if (age <= 12) return "child";
@@ -51,6 +55,8 @@ class ProfileService {
   }
 
   async classify(name: string): Promise<ClassifyResult> {
+    await initDB();
+
     try {
       const profile = await this.profileRepository.findOneBy({ name });
       if (profile) {
@@ -142,6 +148,8 @@ class ProfileService {
   }
 
   async getProfile(id: string) {
+    await initDB();
+
     const profile = await this.profileRepository.findOneBy({ id });
     if (!profile) {
       throw new NotFoundError("Profile not found");
@@ -155,6 +163,8 @@ class ProfileService {
     country_id?: string;
     age_group?: string;
   }) {
+    await initDB();
+
     const queryBuilder = this.profileRepository.createQueryBuilder("profile");
 
     if (filters?.gender) {
@@ -184,6 +194,8 @@ class ProfileService {
   }
 
   async deleteProfile(id: string) {
+    await initDB();
+
     const profile = await this.profileRepository.findOneBy({ id });
     if (!profile) {
       throw new NotFoundError("Profile not found");

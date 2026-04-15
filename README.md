@@ -77,7 +77,7 @@ Health-style welcome route.
 ```json
 {
   "status": "success",
-  "message": "Welcome to the Genderize API Processing Service!"
+  "message": "Welcome to the Data Persistence API Processing Service!"
 }
 ```
 
@@ -111,7 +111,7 @@ Classifies a person by name and stores the result if it does not already exist.
     "sample_size": 1234,
     "age": 29,
     "age_group": "adult",
-    "country": "US",
+    "country_id": "US",
     "country_probability": 0.71,
     "created_at": "2026-04-14T20:00:00.000Z"
   }
@@ -132,12 +132,83 @@ Classifies a person by name and stores the result if it does not already exist.
     "sample_size": 1234,
     "age": 29,
     "age_group": "adult",
-    "country": "US",
+    "country_id": "US",
     "country_probability": 0.71,
     "created_at": "2026-04-14T20:00:00.000Z"
   }
 }
 ```
+
+### `GET /api/profiles/:id`
+
+Returns a single profile by id.
+
+**Success response (`200 OK`)**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "018f3f7c-2a2c-7b5d-9d7c-4e3f8b5d1a10",
+    "name": "Emmanuel",
+    "gender": "male",
+    "gender_probability": 0.99,
+    "sample_size": 1234,
+    "age": 25,
+    "age_group": "adult",
+    "country_id": "NG",
+    "country_probability": 0.85,
+    "created_at": "2026-04-14T20:00:00.000Z"
+  }
+}
+```
+
+### `GET /api/profiles`
+
+Returns all stored profiles. Supports optional case-insensitive filters via query params:
+
+- `gender`
+- `country_id`
+- `age_group`
+
+**Example**
+
+`GET /api/profiles?gender=male&country_id=NG`
+
+**Success response (`200 OK`)**
+
+```json
+{
+  "status": "success",
+  "count": 2,
+  "data": [
+    {
+      "id": "018f3f7c-2a2c-7b5d-9d7c-4e3f8b5d1a10",
+      "name": "Emmanuel",
+      "gender": "male",
+      "age": 25,
+      "age_group": "adult",
+      "country_id": "NG"
+    },
+    {
+      "id": "018f3f7c-2a2c-7b5d-9d7c-4e3f8b5d1a11",
+      "name": "Sarah",
+      "gender": "female",
+      "age": 28,
+      "age_group": "adult",
+      "country_id": "US"
+    }
+  ]
+}
+```
+
+### `DELETE /api/profiles/:id`
+
+Deletes a profile by id.
+
+**Success response**
+
+- `204 No Content`
 
 ## Validation and Errors
 

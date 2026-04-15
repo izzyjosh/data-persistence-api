@@ -1,5 +1,5 @@
 import logger from "../utils/logger";
-import { BadGatewayError } from "../utils/api.errors";
+import { BadGatewayError, NotFoundError } from "../utils/api.errors";
 import { AppDataSource } from "../config/datasource";
 import { Profile } from "../models/Profile.models";
 import {
@@ -9,6 +9,8 @@ import {
   AgifyResponse,
   NationalizeResponse,
   NationalizeCountry,
+  ListProfileDTO,
+  listProfileSchema,
 } from "../schemas/profile.schemas";
 import { StatusCodes } from "http-status-codes";
 
@@ -32,6 +34,22 @@ class ProfileService {
     else return "unknown";
   }
 
+  private throwUpstreamError(
+    apiName: "Genderize" | "Agify" | "Nationalize",
+  ): never {
+    throw new BadGatewayError(`${apiName} returned an invalid response`, "502");
+  }
+
+  private ensureOkResponse(
+    response: Response,
+    apiName: "Genderize" | "Agify" | "Nationalize",
+  ): Response {
+    if (!response.ok) {
+      this.throwUpstreamError(apiName);
+    }
+    return response;
+  }
+
   async classify(name: string): Promise<ClassifyResult> {
     try {
       const profile = await this.profileRepository.findOneBy({ name });
@@ -43,20 +61,32 @@ class ProfileService {
         };
       }
 
-      const [genderizeResponse, agifyResponse, nationalizeResponse] =
-        await Promise.all([
+      const [genderizeFetch, agifyFetch, nationalizeFetch] =
+        await Promise.allSettled([
           fetch(`${this.genderize}?name=${encodeURIComponent(name)}`),
           fetch(`${this.agify}?name=${encodeURIComponent(name)}`),
           fetch(`${this.nationalize}?name=${encodeURIComponent(name)}`),
         ]);
 
-      if (
-        !genderizeResponse.ok ||
-        !agifyResponse.ok ||
-        !nationalizeResponse.ok
-      ) {
-        throw new BadGatewayError("Failed to fetch data from external APIs");
+      if (genderizeFetch.status === "rejected") {
+        this.throwUpstreamError("Genderize");
       }
+      if (agifyFetch.status === "rejected") {
+        this.throwUpstreamError("Agify");
+      }
+      if (nationalizeFetch.status === "rejected") {
+        this.throwUpstreamError("Nationalize");
+      }
+
+      const genderizeResponse = this.ensureOkResponse(
+        genderizeFetch.value,
+        "Genderize",
+      );
+      const agifyResponse = this.ensureOkResponse(agifyFetch.value, "Agify");
+      const nationalizeResponse = this.ensureOkResponse(
+        nationalizeFetch.value,
+        "Nationalize",
+      );
 
       const [genderize, agify, nationalize] = await Promise.all([
         genderizeResponse.json() as Promise<GenderizeResponse>,
@@ -66,13 +96,13 @@ class ProfileService {
 
       // edge cases
       if (genderize.gender === null || genderize.count === 0) {
-        throw new BadGatewayError("Failed to classify gender");
+        this.throwUpstreamError("Genderize");
       }
       if (agify.age === null) {
-        throw new BadGatewayError("Failed to classify age");
+        this.throwUpstreamError("Agify");
       }
       if (nationalize.country.length === 0) {
-        throw new BadGatewayError("Failed to classify country");
+        this.throwUpstreamError("Nationalize");
       }
 
       const gender = genderize.gender;
@@ -91,7 +121,7 @@ class ProfileService {
       newProfile.sample_size = genderize.count;
       newProfile.age = age;
       newProfile.age_group = ageGroup;
-      newProfile.country = contryData.country_id;
+      newProfile.country_id = contryData.country_id;
       newProfile.country_probability = contryData.probability;
 
       await this.profileRepository.save(newProfile);
@@ -109,6 +139,56 @@ class ProfileService {
       logger.error(`Unexpected classify error: ${error.message}`);
       throw error;
     }
+  }
+
+  async getProfile(id: string) {
+    const profile = await this.profileRepository.findOneBy({ id });
+    if (!profile) {
+      throw new NotFoundError("Profile not found");
+    }
+
+    return profileResponseSchema.parse(profile);
+  }
+
+  async getAllProfiles(filters?: {
+    gender?: string;
+    country_id?: string;
+    age_group?: string;
+  }) {
+    const queryBuilder = this.profileRepository.createQueryBuilder("profile");
+
+    if (filters?.gender) {
+      queryBuilder.andWhere("LOWER(profile.gender) = LOWER(:gender)", {
+        gender: filters.gender,
+      });
+    }
+
+    if (filters?.country_id) {
+      queryBuilder.andWhere("LOWER(profile.country_id) = LOWER(:country_id)", {
+        country_id: filters.country_id,
+      });
+    }
+
+    if (filters?.age_group) {
+      queryBuilder.andWhere("LOWER(profile.age_group) = LOWER(:age_group)", {
+        age_group: filters.age_group,
+      });
+    }
+
+    const profiles = await queryBuilder.getMany();
+    const profilesMap: ListProfileDTO[] = profiles.map((profile: Profile) =>
+      listProfileSchema.parse(profile),
+    );
+    const count = profilesMap.length;
+    return { profiles: profilesMap, count };
+  }
+
+  async deleteProfile(id: string) {
+    const profile = await this.profileRepository.findOneBy({ id });
+    if (!profile) {
+      throw new NotFoundError("Profile not found");
+    }
+    await this.profileRepository.remove(profile);
   }
 }
 

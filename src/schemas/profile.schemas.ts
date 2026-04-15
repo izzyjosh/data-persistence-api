@@ -7,7 +7,7 @@ export const createProfileSchema = z.object({
   sample_size: z.number(),
   age: z.number(),
   age_group: z.string(),
-  country: z.string(),
+  country_id: z.string(),
   country_probability: z.number(),
 });
 
@@ -16,6 +16,14 @@ export const profileResponseSchema = createProfileSchema.extend({
   created_at: z.string(),
 });
 
+export const listProfileSchema = profileResponseSchema.omit({
+  created_at: true,
+  gender_probability: true,
+  sample_size: true,
+  country_probability: true,
+});
+
+export type ListProfileDTO = z.infer<typeof listProfileSchema>;
 export type CreateProfileDTO = z.infer<typeof createProfileSchema>;
 export type ProfileResponseDTO = z.infer<typeof profileResponseSchema>;
 

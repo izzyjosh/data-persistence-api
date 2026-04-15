@@ -148,16 +148,6 @@ The request body is validated before classification runs.
 - `502 Bad Gateway` - one of the external classification APIs fails
 - `500 Internal Server Error` - unexpected server or database error
 
-## Project Structure
-
-- `src/app.ts` - app bootstrap, middleware, and route registration
-- `src/routes/` - API routes
-- `src/controllers/` - request handlers
-- `src/services/` - classification and persistence logic
-- `src/models/` - TypeORM entities
-- `src/utils/` - validation, logging, and response helpers
-- `src/config/` - environment and database configuration
-
 ## Notes
 
 - The app uses TypeORM with PostgreSQL for persistence.

@@ -1,14 +1,13 @@
 import { StatusCodes } from "http-status-codes";
 
 export default class ApiError extends Error {
-  status: string;
-
   constructor(
     public message: string,
     public statusCode: number,
+    public status: string = "error",
   ) {
     super(message);
-    this.status = "error";
+    this.status = status;
 
     Error.captureStackTrace(this, this.constructor);
   }
@@ -33,8 +32,8 @@ export class InternalServerError extends ApiError {
 }
 
 export class BadGatewayError extends ApiError {
-  constructor(message: string = "Bad Gateway") {
-    super(message, StatusCodes.BAD_GATEWAY);
+  constructor(message: string = "Bad Gateway", status: string = "error") {
+    super(message, StatusCodes.BAD_GATEWAY, status);
   }
 }
 

@@ -24,8 +24,8 @@ export class Profile {
   @Column()
   age_group?: string;
 
-  @Column()
-  country?: string;
+  @Column({ nullable: true })
+  country_id?: string;
 
   @Column({ type: "double precision" })
   country_probability?: number;

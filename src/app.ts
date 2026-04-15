@@ -9,6 +9,7 @@ import profileRouter from "./routes/profile";
 import cors from "cors";
 import { config } from "./config/config";
 import { AppDataSource } from "./config/datasource";
+import { eventLoopUtilization } from "node:perf_hooks";
 
 const port = config.port;
 
@@ -38,6 +39,15 @@ app.get("/", (req, res) => {
 app.use(NotFoundErrorHandler);
 app.use(RequestErrorHandler);
 
-app.listen(port, () => {
-  sysLogger.info(`Server is running on port ${port}`);
-});
+(async () => {
+  try {
+    await AppDataSource.initialize();
+    sysLogger.info("Database connection established successfully");
+    app.listen(port, () => {
+      sysLogger.info(`Server is running on port ${port}`);
+    });
+  } catch (error) {
+    sysLogger.error(`Failed to initialize database connection ${error}`);
+    process.exit(1);
+  }
+})();

@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { config } from "./config";
+import { Profile } from "../models/Profile.models";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -13,6 +14,6 @@ export const AppDataSource = new DataSource({
     max: 10, // connection pool size (optional)
   },
   logging: ["error"],
-  entities: ["src/models/**/*.ts"],
+  entities: [Profile],
   migrations: ["src/migrations/**/*.ts"],
 });

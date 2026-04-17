@@ -154,13 +154,23 @@ class ProfileService {
     return profileResponseSchema.parse(profile);
   }
 
-  @cache({ ttl: 180, key: () => "profiles:list" })
-  async getAllProfiles(filters?: {
-    gender?: string;
-    country_id?: string;
-    age_group?: string;
-  }) {
-    const queryBuilder = this.profileRepository.createQueryBuilder("profile");
+  //@cache({ ttl: 180, key: () => "profiles:list" })
+  async getAllProfiles(
+    filters?: {
+      gender?: string;
+      country_id?: string;
+      age_group?: string;
+      cursor?: string;
+    },
+    limit: number = 10,
+  ) {
+    const pageSize =
+      Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 10;
+
+    const queryBuilder = this.profileRepository
+      .createQueryBuilder("profile")
+      .orderBy("profile.created_at", "DESC")
+      .take(pageSize);
 
     if (filters?.gender) {
       queryBuilder.andWhere("LOWER(profile.gender) = LOWER(:gender)", {
@@ -180,12 +190,22 @@ class ProfileService {
       });
     }
 
+    if (filters?.cursor) {
+      queryBuilder.andWhere("profile.created_at < :cursor", {
+        cursor: filters.cursor,
+      });
+    }
+
     const profiles = await queryBuilder.getMany();
     const profilesMap: ListProfileDTO[] = profiles.map((profile: Profile) =>
       listProfileSchema.parse(profile),
     );
     const count = profilesMap.length;
-    return { profiles: profilesMap, count };
+    const nextCursor: string | undefined =
+      profilesMap.length > 0
+        ? (profiles[profiles.length - 1]?.created_at ?? undefined)
+        : undefined;
+    return { profiles: profilesMap, count, nextCursor };
   }
 
   async deleteProfile(id: string) {

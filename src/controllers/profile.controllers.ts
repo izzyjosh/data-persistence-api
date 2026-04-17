@@ -45,21 +45,28 @@ class ProfileController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { gender, country_id, age_group } = req.query;
+      const { gender, country_id, age_group, cursor, limit } = req.query;
 
       const filters = {
         ...(gender ? { gender: String(gender) } : {}),
         ...(country_id ? { country_id: String(country_id) } : {}),
         ...(age_group ? { age_group: String(age_group) } : {}),
+        ...(cursor ? { cursor: String(cursor) } : {}),
       };
+      const profilesLimit = limit ? Number(limit) : undefined;
 
-      const response = await profileService.getAllProfiles(filters);
+      const response = await profileService.getAllProfiles(
+        filters,
+        profilesLimit,
+      );
 
-      res
-        .status(StatusCodes.OK)
-        .json(
-          successResponse({ data: response.profiles, count: response.count }),
-        );
+      res.status(StatusCodes.OK).json(
+        successResponse({
+          data: response.profiles,
+          count: response.count,
+          nextCursor: response.nextCursor,
+        }),
+      );
     } catch (error) {
       next(error);
     }

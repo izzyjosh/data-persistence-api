@@ -3,11 +3,13 @@ interface ISuccessResponse {
   data: any;
   message?: string;
   count?: number;
+  nextCursor?: string;
 }
 interface IData {
   data: any;
   message?: string;
   count?: number;
+  nextCursor?: string | undefined;
 }
 export const successResponse = (data: IData): ISuccessResponse => {
   const response: ISuccessResponse = {
@@ -21,6 +23,10 @@ export const successResponse = (data: IData): ISuccessResponse => {
 
   if (data.count !== undefined) {
     response.count = data.count;
+  }
+
+  if (data.nextCursor !== undefined) {
+    response.nextCursor = data.nextCursor;
   }
 
   return response;

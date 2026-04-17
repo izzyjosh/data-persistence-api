@@ -13,6 +13,8 @@ import {
   listProfileSchema,
 } from "../schemas/profile.schemas";
 import { StatusCodes } from "http-status-codes";
+import { cacheService } from "./cache.service";
+import { cache } from "../utils/cacheDecorator";
 
 type ClassifyResult = {
   profile: ProfileResponseDTO;
@@ -50,6 +52,7 @@ class ProfileService {
     return response;
   }
 
+  @cache({ ttl: 360, key: (name: string) => `classify:${name.toLowerCase()}` })
   async classify(name: string): Promise<ClassifyResult> {
     try {
       const profile = await this.profileRepository.findOneBy({ name });
@@ -141,6 +144,7 @@ class ProfileService {
     }
   }
 
+  @cache({ ttl: 3600, key: (id: string) => `profile:${id}` })
   async getProfile(id: string) {
     const profile = await this.profileRepository.findOneBy({ id });
     if (!profile) {
@@ -150,6 +154,7 @@ class ProfileService {
     return profileResponseSchema.parse(profile);
   }
 
+  @cache({ ttl: 180, key: () => "profiles:list" })
   async getAllProfiles(filters?: {
     gender?: string;
     country_id?: string;
@@ -188,6 +193,11 @@ class ProfileService {
     if (!profile) {
       throw new NotFoundError("Profile not found");
     }
+
+    // invaldate cache for this profile and the list endpoint
+    await cacheService.del(`profile:${id}`);
+    await cacheService.del("profiles:list");
+
     await this.profileRepository.remove(profile);
   }
 }

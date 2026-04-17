@@ -7,12 +7,12 @@ export const AppDataSource = new DataSource({
   type: "postgres",
   url: config.databaseUrl,
   synchronize: true,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-  extra: {
-    max: 10, // connection pool size (optional)
-  },
+  // ssl: {
+  //   rejectUnauthorized: false,
+  // },
+  // extra: {
+  //   max: 10, // connection pool size (optional)
+  // },
   logging: ["error"],
   entities: [Profile],
   migrations: ["src/migrations/**/*.ts"],

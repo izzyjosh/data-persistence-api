@@ -3,7 +3,7 @@ interface ISuccessResponse {
   data: any;
   message?: string;
   count?: number;
-  nextCursor?: string;
+  nextCursor?: string | undefined;
 }
 interface IData {
   data: any;

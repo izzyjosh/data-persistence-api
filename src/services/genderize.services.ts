@@ -197,16 +197,30 @@ class ProfileService {
 
   //@cache({ ttl: 180, key: () => "profiles:list" })
   async getAllProfiles(filters: FilterQueryDTO) {
-    const queryBuilder = this.profileRepository.createQueryBuilder("profile");
+    const page = Math.max(filters.page, 1);
+    const limit = Math.max(filters.limit, 1);
 
-    const qb = await this.applyFilters(queryBuilder, filters);
+    const skip = (page - 1) * limit;
 
-    const profiles = await qb.getMany();
+    const baseQuery = this.profileRepository
+      .createQueryBuilder("profile")
+      .orderBy(filters.sort_by, filters.order)
+      .skip(skip)
+      .take(filters.limit);
 
-    const profilesMap: ListProfileDTO[] = profiles.map((profile: Profile) =>
-      listProfileSchema.parse(profile),
+    const qb = await this.applyFilters(baseQuery, filters);
+
+    const [profiles, total] = await Promise.all([qb.getMany(), qb.getCount()]);
+
+    const profilesMap: ProfileResponseDTO[] = profiles.map((profile: Profile) =>
+      profileResponseSchema.parse(profile),
     );
-    return { profiles: profilesMap };
+    return {
+      profiles: profilesMap,
+      page: filters.page,
+      limit: filters.limit,
+      total: total,
+    };
   }
 
   async deleteProfile(id: string) {

@@ -61,6 +61,13 @@ export const filterQuerySchema = z.object({
   min_country_probability: z.coerce.number().optional(),
   page: z.coerce.number().default(1),
   limit: z.coerce.number().max(50).default(10),
+  sort_by: z
+    .enum(["created_at", "age", "gender_probability", "country_probability"])
+    .default("created_at"),
+  order: z
+    .enum(["asc", "desc"])
+    .default("desc")
+    .transform((val) => val.toUpperCase() as "ASC" | "DESC"),
 });
 
 export type FilterQueryDTO = z.infer<typeof filterQuerySchema>;

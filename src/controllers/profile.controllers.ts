@@ -60,6 +60,9 @@ class ProfileController {
 
       res.status(StatusCodes.OK).json(
         successResponse<ListProfileDTO[]>({
+          page: response.page,
+          limit: response.limit,
+          total: response.total,
           data: response.profiles,
         }),
       );

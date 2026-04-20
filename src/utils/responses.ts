@@ -1,32 +1,40 @@
-interface ISuccessResponse {
+interface ISuccessResponse<TData> {
   status: "success";
-  data: any;
+  data: TData;
   message?: string;
-  count?: number;
-  nextCursor?: string | undefined;
+  page?: number;
+  limit?: number;
+  total?: number;
 }
-interface IData {
-  data: any;
+interface IData<TData> {
+  data: TData;
   message?: string;
-  count?: number;
-  nextCursor?: string | undefined;
+  page?: number;
+  limit?: number;
+  total?: number;
 }
-export const successResponse = (data: IData): ISuccessResponse => {
-  const response: ISuccessResponse = {
+export const successResponse = <TData>(
+  res: IData<TData>,
+): ISuccessResponse<TData> => {
+  const response: ISuccessResponse<TData> = {
     status: "success",
-    data: data.data,
+    data: res.data,
   };
 
-  if (data.message !== undefined) {
-    response.message = data.message;
+  if (res.message !== undefined) {
+    response.message = res.message;
   }
 
-  if (data.count !== undefined) {
-    response.count = data.count;
+  if (res.page !== undefined) {
+    response.page = res.page;
   }
 
-  if (data.nextCursor !== undefined) {
-    response.nextCursor = data.nextCursor;
+  if (res.limit !== undefined) {
+    response.limit = res.limit;
+  }
+
+  if (res.total !== undefined) {
+    response.total = res.total;
   }
 
   return response;

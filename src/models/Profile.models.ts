@@ -1,45 +1,57 @@
-import { BeforeInsert, Column, Entity, PrimaryColumn } from "typeorm";
+import {
+  BeforeInsert,
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryColumn,
+} from "typeorm";
 import { uuidv7 } from "uuidv7";
 
+export enum Gender {
+  MALE = "male",
+  FEMALE = "female",
+}
+
+export enum AgeGroup {
+  CHILD = "child",
+  TEENAGER = "teenager",
+  ADULT = "adult",
+  SENIOR = "senior",
+}
 @Entity()
 export class Profile {
   @PrimaryColumn("uuid")
-  id?: string;
+  id!: string;
 
-  @Column()
-  name?: string;
+  @Column({ type: "varchar", unique: true })
+  name!: string;
 
-  @Column()
-  gender?: string;
+  @Column({ type: "enum", enum: Gender })
+  gender!: Gender;
 
-  @Column({ type: "double precision" })
-  gender_probability?: number;
+  @Column({ type: "float" })
+  gender_probability!: number;
 
-  @Column()
-  sample_size?: number;
+  @Column({ type: "int" })
+  age!: number;
 
-  @Column()
-  age?: number;
+  @Column({ type: "enum", enum: AgeGroup })
+  age_group!: AgeGroup;
 
-  @Column()
-  age_group?: string;
+  @Column({ type: "varchar", length: 2 })
+  country_id!: string;
 
-  @Column({ nullable: true })
-  country_id?: string;
+  @Column({ type: "varchar" })
+  country_name!: string;
 
-  @Column({ type: "double precision" })
-  country_probability?: number;
+  @Column({ type: "float" })
+  country_probability!: number;
 
-  @Column()
-  created_at?: string;
+  @CreateDateColumn({ type: "timestamp" })
+  created_at!: Date;
 
   @BeforeInsert()
   generateId() {
     this.id = uuidv7();
-  }
-
-  @BeforeInsert()
-  setCreatedAt() {
-    this.created_at = new Date().toISOString();
   }
 }

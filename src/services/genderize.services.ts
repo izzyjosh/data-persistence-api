@@ -1,7 +1,8 @@
 import logger from "../utils/logger";
+import countries from "i18n-iso-countries";
 import { BadGatewayError, NotFoundError } from "../utils/api.errors";
 import { AppDataSource } from "../config/datasource";
-import { Profile } from "../models/Profile.models";
+import { Profile, Gender, AgeGroup } from "../models/Profile.models";
 import {
   profileResponseSchema,
   ProfileResponseDTO,
@@ -9,8 +10,6 @@ import {
   AgifyResponse,
   NationalizeResponse,
   NationalizeCountry,
-  ListProfileDTO,
-  listProfileSchema,
   FilterQueryDTO,
 } from "../schemas/profile.schemas";
 import { StatusCodes } from "http-status-codes";
@@ -23,6 +22,8 @@ type ClassifyResult = {
   message?: string;
   statusCode: number;
 };
+
+countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
 
 class ProfileService {
   private readonly profileRepository = AppDataSource.getRepository(Profile);
@@ -152,21 +153,23 @@ class ProfileService {
       const gender = genderize.gender;
       const age = agify.age;
       const ageGroup = this.ageGrouping(age);
-      const contryData = nationalize.country.reduce(
+      const countryData = nationalize.country.reduce(
         (max: NationalizeCountry, item: NationalizeCountry) => {
           return item.probability > max.probability ? item : max;
         },
       );
 
+      const countryName = countries.getName(countryData.country_id, "en");
+
       const newProfile = this.profileRepository.create();
       newProfile.name = genderize.name;
-      newProfile.gender = gender;
+      newProfile.gender = gender as Gender;
       newProfile.gender_probability = genderize.probability;
-      newProfile.sample_size = genderize.count;
       newProfile.age = age;
-      newProfile.age_group = ageGroup;
-      newProfile.country_id = contryData.country_id;
-      newProfile.country_probability = contryData.probability;
+      newProfile.age_group = ageGroup as AgeGroup;
+      newProfile.country_id = countryData.country_id;
+      newProfile.country_name = countryName as string;
+      newProfile.country_probability = countryData.probability;
 
       await this.profileRepository.save(newProfile);
 

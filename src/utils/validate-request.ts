@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ValidationError, BadRequestError } from "./api.errors";
 import { z } from "zod";
+import { FilterQueryDTO } from "../schemas/profile.schemas";
 
 const NUMERIC_PATTERN = /^-?\d+(\.\d+)?$/;
 
@@ -43,5 +44,17 @@ export const validateRequest =
 
     const validatedData = schema.parse({ name: trimmedValue });
     (req as any).validatedBody = validatedData;
+    next();
+  };
+
+// Query parameters validation
+export const validateQueryParams =
+  (querySchema: z.ZodType) =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    const validateQuery = querySchema.safeParse(req.query);
+    if (!validateQuery.success) {
+      throw new ValidationError("Invalid query parameters");
+    }
+    (req as any).validatedQuery = validateQuery;
     next();
   };

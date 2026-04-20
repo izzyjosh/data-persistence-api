@@ -1,6 +1,10 @@
 import { Router } from "express";
-import { validateRequest } from "../utils/validate-request";
+import {
+  validateRequest,
+  validateQueryParams,
+} from "../utils/validate-request";
 import { profileController } from "../controllers/profile.controllers";
+import { filterQuerySchema } from "../schemas/profile.schemas";
 
 const profileRouter = Router();
 
@@ -8,9 +12,13 @@ profileRouter.post("/profiles", validateRequest(), (req, res, next) => {
   profileController.classify(req, res, next);
 });
 
-profileRouter.get("/profiles", (req, res, next) => {
-  profileController.allProfiles(req, res, next);
-});
+profileRouter.get(
+  "/profiles",
+  validateQueryParams(filterQuerySchema),
+  (req, res, next) => {
+    profileController.allProfiles(req, res, next);
+  },
+);
 
 profileRouter.get("/profiles/:id", (req, res, next) => {
   profileController.getProfile(req, res, next);

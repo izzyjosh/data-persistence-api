@@ -11,10 +11,12 @@ import {
   NationalizeCountry,
   ListProfileDTO,
   listProfileSchema,
+  FilterQueryDTO,
 } from "../schemas/profile.schemas";
 import { StatusCodes } from "http-status-codes";
 import { cacheService } from "./cache.service";
 import { cache } from "../utils/cacheDecorator";
+import { SelectQueryBuilder } from "typeorm";
 
 type ClassifyResult = {
   profile: ProfileResponseDTO;
@@ -50,6 +52,45 @@ class ProfileService {
       this.throwUpstreamError(apiName);
     }
     return response;
+  }
+
+  private async applyFilters(
+    qb: SelectQueryBuilder<Profile>,
+    filters: FilterQueryDTO,
+  ) {
+    if (filters.age_group) {
+      qb.andWhere("profile.age_group = :age_group", {
+        age_group: filters.age_group,
+      });
+    }
+    if (filters.country_id) {
+      qb.andWhere("profile.country_id = :country_id", {
+        country_id: filters.country_id,
+      });
+    }
+    if (filters.gender) {
+      qb.andWhere("profile.gender = :gender", { gender: filters.gender });
+    }
+
+    if (filters.min_age !== undefined) {
+      qb.andWhere("profile.age >= :min_age", { min_age: filters.min_age });
+    }
+
+    if (filters.max_age !== undefined) {
+      qb.andWhere("profile.age <= :max_age", { max_age: filters.max_age });
+    }
+
+    if (filters.min_country_probability)
+      qb.andWhere("profile.country_probability >= :min_country_probability", {
+        min_country_probability: filters.min_country_probability,
+      });
+
+    if (filters.min_gender_probability)
+      qb.andWhere("profile.gender_probabilty >= :min_gender_probabilty", {
+        min_gender_probabilty: filters.min_gender_probability,
+      });
+
+    return qb;
   }
 
   @cache({ ttl: 360, key: (name: string) => `classify:${name.toLowerCase()}` })
@@ -155,57 +196,17 @@ class ProfileService {
   }
 
   //@cache({ ttl: 180, key: () => "profiles:list" })
-  async getAllProfiles(
-    filters?: {
-      gender?: string;
-      country_id?: string;
-      age_group?: string;
-      cursor?: string;
-    },
-    limit: number = 10,
-  ) {
-    const pageSize =
-      Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 10;
+  async getAllProfiles(filters: FilterQueryDTO) {
+    const queryBuilder = this.profileRepository.createQueryBuilder("profile");
 
-    const queryBuilder = this.profileRepository
-      .createQueryBuilder("profile")
-      .orderBy("profile.created_at", "DESC")
-      .take(pageSize);
+    const qb = await this.applyFilters(queryBuilder, filters);
 
-    if (filters?.gender) {
-      queryBuilder.andWhere("LOWER(profile.gender) = LOWER(:gender)", {
-        gender: filters.gender,
-      });
-    }
+    const profiles = await qb.getMany();
 
-    if (filters?.country_id) {
-      queryBuilder.andWhere("LOWER(profile.country_id) = LOWER(:country_id)", {
-        country_id: filters.country_id,
-      });
-    }
-
-    if (filters?.age_group) {
-      queryBuilder.andWhere("LOWER(profile.age_group) = LOWER(:age_group)", {
-        age_group: filters.age_group,
-      });
-    }
-
-    if (filters?.cursor) {
-      queryBuilder.andWhere("profile.created_at < :cursor", {
-        cursor: filters.cursor,
-      });
-    }
-
-    const profiles = await queryBuilder.getMany();
     const profilesMap: ListProfileDTO[] = profiles.map((profile: Profile) =>
       listProfileSchema.parse(profile),
     );
-    const count = profilesMap.length;
-    const nextCursor: string | undefined =
-      profilesMap.length > 0
-        ? (profiles[profiles.length - 1]?.created_at ?? undefined)
-        : undefined;
-    return { profiles: profilesMap, count, nextCursor };
+    return { profiles: profilesMap };
   }
 
   async deleteProfile(id: string) {

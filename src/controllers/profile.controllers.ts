@@ -4,6 +4,13 @@ import { profileService } from "../services/genderize.services";
 import { successResponse } from "../utils/responses";
 import { StatusCodes } from "http-status-codes";
 
+import {
+  ListProfileDTO,
+  CreateProfileDTO,
+  ProfileResponseDTO,
+} from "../schemas/profile.schemas";
+import { SelectQueryBuilder } from "typeorm";
+
 class ProfileController {
   async classify(
     req: Request,
@@ -14,7 +21,7 @@ class ProfileController {
       const name = (req as any).validatedBody.name;
       const result = await profileService.classify(name);
       res.status(result.statusCode).json(
-        successResponse({
+        successResponse<ProfileResponseDTO>({
           data: result.profile,
           ...(result.message !== undefined ? { message: result.message } : {}),
         }),
@@ -33,7 +40,9 @@ class ProfileController {
       const id = (req as any).params?.id;
       const result = await profileService.getProfile(id);
 
-      res.status(StatusCodes.OK).json(successResponse({ data: result }));
+      res
+        .status(StatusCodes.OK)
+        .json(successResponse<ProfileResponseDTO>({ data: result }));
     } catch (error) {
       next(error);
     }
@@ -45,26 +54,13 @@ class ProfileController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { gender, country_id, age_group, cursor, limit } = req.query;
+      const validatedQuery = (req as any).validatedQuery.data;
 
-      const filters = {
-        ...(gender ? { gender: String(gender) } : {}),
-        ...(country_id ? { country_id: String(country_id) } : {}),
-        ...(age_group ? { age_group: String(age_group) } : {}),
-        ...(cursor ? { cursor: String(cursor) } : {}),
-      };
-      const profilesLimit = limit ? Number(limit) : undefined;
-
-      const response = await profileService.getAllProfiles(
-        filters,
-        profilesLimit,
-      );
+      const response = await profileService.getAllProfiles(validatedQuery);
 
       res.status(StatusCodes.OK).json(
-        successResponse({
+        successResponse<ListProfileDTO[]>({
           data: response.profiles,
-          count: response.count,
-          nextCursor: response.nextCursor,
         }),
       );
     } catch (error) {

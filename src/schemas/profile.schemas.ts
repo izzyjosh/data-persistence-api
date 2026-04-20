@@ -49,3 +49,18 @@ export type NationalizeResponse = {
   name: string;
   country: NationalizeCountry[];
 };
+
+// Query filter schema
+export const filterQuerySchema = z.object({
+  gender: z.string().optional(),
+  age_group: z.string().optional(),
+  country_id: z.string().optional(),
+  min_age: z.coerce.number().optional(),
+  max_age: z.coerce.number().optional(),
+  min_gender_probability: z.coerce.number().optional(),
+  min_country_probability: z.coerce.number().optional(),
+  page: z.coerce.number().default(1),
+  limit: z.coerce.number().max(50).default(10),
+});
+
+export type FilterQueryDTO = z.infer<typeof filterQuerySchema>;

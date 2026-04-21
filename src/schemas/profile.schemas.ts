@@ -70,3 +70,11 @@ export const filterQuerySchema = z.object({
 });
 
 export type FilterQueryDTO = z.infer<typeof filterQuerySchema>;
+
+export const naturalSearchSchema = z.object({
+  q: z.string().trim().min(1, "search query cannot be empty"),
+  page: z.coerce.number().default(1),
+  limit: z.coerce.number().max(50).default(10),
+});
+
+export type NaturalSearchDTO = z.infer<typeof naturalSearchSchema>;

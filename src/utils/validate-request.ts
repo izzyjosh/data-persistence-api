@@ -53,7 +53,8 @@ export const validateQueryParams =
   (req: Request, res: Response, next: NextFunction): void => {
     const validateQuery = querySchema.safeParse(req.query);
     if (!validateQuery.success) {
-      throw new ValidationError("Invalid query parameters");
+      next(new ValidationError("Invalid query parameters"));
+      return;
     }
     (req as any).validatedQuery = validateQuery;
     next();

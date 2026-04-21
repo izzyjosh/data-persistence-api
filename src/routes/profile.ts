@@ -4,7 +4,10 @@ import {
   validateQueryParams,
 } from "../utils/validate-request";
 import { profileController } from "../controllers/profile.controllers";
-import { filterQuerySchema } from "../schemas/profile.schemas";
+import {
+  filterQuerySchema,
+  naturalSearchSchema,
+} from "../schemas/profile.schemas";
 
 const profileRouter = Router();
 
@@ -17,6 +20,14 @@ profileRouter.get(
   validateQueryParams(filterQuerySchema),
   (req, res, next) => {
     profileController.allProfiles(req, res, next);
+  },
+);
+
+profileRouter.get(
+  "/profiles/search",
+  validateQueryParams(naturalSearchSchema),
+  (req, res, next) => {
+    profileController.naturalSearch(req, res, next);
   },
 );
 

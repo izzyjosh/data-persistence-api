@@ -11,16 +11,22 @@ import {
   NationalizeResponse,
   NationalizeCountry,
   FilterQueryDTO,
+  NaturalSearchDTO,
 } from "../schemas/profile.schemas";
 import { StatusCodes } from "http-status-codes";
 import { cacheService } from "./cache.service";
 import { cache } from "../utils/cacheDecorator";
 import { SelectQueryBuilder } from "typeorm";
+import { parseNaturalQuery } from "../utils/natural-query-logic";
 
 type ClassifyResult = {
   profile: ProfileResponseDTO;
   message?: string;
   statusCode: number;
+};
+
+type ProfileFilterCriteria = Omit<FilterQueryDTO, "gender"> & {
+  gender?: FilterQueryDTO["gender"] | Array<"male" | "female">;
 };
 
 countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
@@ -57,7 +63,7 @@ class ProfileService {
 
   private async applyFilters(
     qb: SelectQueryBuilder<Profile>,
-    filters: FilterQueryDTO,
+    filters: ProfileFilterCriteria,
   ) {
     if (filters.age_group) {
       qb.andWhere("profile.age_group = :age_group", {
@@ -70,7 +76,13 @@ class ProfileService {
       });
     }
     if (filters.gender) {
-      qb.andWhere("profile.gender = :gender", { gender: filters.gender });
+      if (Array.isArray(filters.gender)) {
+        qb.andWhere("profile.gender IN (:...gender)", {
+          gender: filters.gender,
+        });
+      } else {
+        qb.andWhere("profile.gender = :gender", { gender: filters.gender });
+      }
     }
 
     if (filters.min_age !== undefined) {
@@ -94,7 +106,6 @@ class ProfileService {
     return qb;
   }
 
-  @cache({ ttl: 360, key: (name: string) => `classify:${name.toLowerCase()}` })
   async classify(name: string): Promise<ClassifyResult> {
     try {
       const profile = await this.profileRepository.findOneBy({ name });
@@ -188,7 +199,6 @@ class ProfileService {
     }
   }
 
-  @cache({ ttl: 3600, key: (id: string) => `profile:${id}` })
   async getProfile(id: string) {
     const profile = await this.profileRepository.findOneBy({ id });
     if (!profile) {
@@ -237,6 +247,38 @@ class ProfileService {
     await cacheService.del("profiles:list");
 
     await this.profileRepository.remove(profile);
+  }
+
+  async naturalSearch(filters: NaturalSearchDTO) {
+    const page = Math.max(filters.page, 1);
+    const limit = Math.max(filters.limit, 1);
+
+    const skip = (page - 1) * limit;
+
+    const parseSearchQuery = parseNaturalQuery(filters.q);
+
+    const baseQuery = this.profileRepository
+      .createQueryBuilder("profile")
+      .skip(skip)
+      .take(filters.limit);
+
+    const naturalFilters: ProfileFilterCriteria = {
+      page,
+      limit,
+      sort_by: "created_at",
+      order: "DESC",
+      ...parseSearchQuery,
+    };
+
+    const qb = await this.applyFilters(baseQuery, naturalFilters);
+
+    const data = await qb.getMany();
+    return {
+      profiles: data.map((profile) => profileResponseSchema.parse(profile)),
+      page: filters.page,
+      limit: filters.limit,
+      total: data.length,
+    };
   }
 }
 

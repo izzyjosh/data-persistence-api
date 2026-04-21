@@ -6,10 +6,9 @@ import { StatusCodes } from "http-status-codes";
 
 import {
   ListProfileDTO,
-  CreateProfileDTO,
   ProfileResponseDTO,
+  NaturalSearchDTO,
 } from "../schemas/profile.schemas";
-import { SelectQueryBuilder } from "typeorm";
 
 class ProfileController {
   async classify(
@@ -80,6 +79,28 @@ class ProfileController {
       const id = (req as any).params?.id;
       await profileService.deleteProfile(id);
       res.status(StatusCodes.NO_CONTENT).send();
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async naturalSearch(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const validatedQuery = (req as any).validatedQuery
+        .data as NaturalSearchDTO;
+      const results = await profileService.naturalSearch(validatedQuery);
+      res.status(StatusCodes.OK).json(
+        successResponse<ProfileResponseDTO[]>({
+          data: results.profiles,
+          page: results.page,
+          limit: results.limit,
+          total: results.total,
+        }),
+      );
     } catch (error) {
       next(error);
     }

@@ -14,7 +14,6 @@ import {
   NaturalSearchDTO,
 } from "../schemas/profile.schemas";
 import { StatusCodes } from "http-status-codes";
-import { cacheService } from "./cache.service";
 import { SelectQueryBuilder } from "typeorm";
 import { parseNaturalQuery } from "../utils/natural-query-logic";
 
@@ -242,11 +241,6 @@ class ProfileService {
     if (!profile) {
       throw new NotFoundError("Profile not found");
     }
-
-    // invaldate cache for this profile and the list endpoint
-    await cacheService.del(`profile:${id}`);
-    await cacheService.del("profiles:list");
-
     await this.profileRepository.remove(profile);
   }
 

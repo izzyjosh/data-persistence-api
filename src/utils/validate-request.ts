@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ValidationError, BadRequestError } from "./api.errors";
 import { z } from "zod";
-import { FilterQueryDTO } from "../schemas/profile.schemas";
 
 const NUMERIC_PATTERN = /^-?\d+(\.\d+)?$/;
 

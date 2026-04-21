@@ -1,4 +1,3 @@
-import { response } from "express";
 import pino from "pino";
 import pinoHttp from "pino-http";
 

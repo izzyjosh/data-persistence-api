@@ -15,7 +15,6 @@ import {
 } from "../schemas/profile.schemas";
 import { StatusCodes } from "http-status-codes";
 import { cacheService } from "./cache.service";
-import { cache } from "../utils/cacheDecorator";
 import { SelectQueryBuilder } from "typeorm";
 import { parseNaturalQuery } from "../utils/natural-query-logic";
 
@@ -208,7 +207,6 @@ class ProfileService {
     return profileResponseSchema.parse(profile);
   }
 
-  //@cache({ ttl: 180, key: () => "profiles:list" })
   async getAllProfiles(filters: FilterQueryDTO) {
     const page = Math.max(filters.page, 1);
     const limit = Math.max(filters.limit, 1);

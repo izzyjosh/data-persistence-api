@@ -49,8 +49,11 @@ type AgeRule =
 const AGE_RULES: AgeRule[] = [
   { pattern: /young/, min: 16, max: 24 },
   { pattern: /teen/, min: 13, max: 19 },
-  { pattern: /above (\d+)/, handler: (...[n]) => ({ min: n }) },
-  { pattern: /under (\d+)/, handler: (...[n]) => ({ max: n }) },
+  {
+    pattern: /above (\d+)/,
+    handler: (...[n]) => ({ min: n ? n + 1 : undefined }),
+  },
+  { pattern: /under (\d+)/, handler: (...[n]) => ({ max: n ? n : undefined }) },
   {
     pattern: /between (\d+) and (\d+)/,
     handler: (...[a, b]) => ({ min: a, max: b }),

@@ -213,15 +213,18 @@ class ProfileService {
 
     const skip = (page - 1) * limit;
 
-    const baseQuery = this.profileRepository
-      .createQueryBuilder("profile")
+    const baseQuery = this.profileRepository.createQueryBuilder("profile");
+
+    const filteredQuery = await this.applyFilters(baseQuery, filters);
+
+    const total = await filteredQuery.getCount();
+
+    const profiles = await filteredQuery
+      .clone()
       .orderBy(filters.sort_by, filters.order)
       .skip(skip)
-      .take(filters.limit);
-
-    const qb = await this.applyFilters(baseQuery, filters);
-
-    const [profiles, total] = await Promise.all([qb.getMany(), qb.getCount()]);
+      .take(limit)
+      .getMany();
 
     const profilesMap: ProfileResponseDTO[] = profiles.map((profile: Profile) =>
       profileResponseSchema.parse(profile),
@@ -255,10 +258,7 @@ class ProfileService {
 
     const parseSearchQuery = parseNaturalQuery(filters.q);
 
-    const baseQuery = this.profileRepository
-      .createQueryBuilder("profile")
-      .skip(skip)
-      .take(filters.limit);
+    const baseQuery = this.profileRepository.createQueryBuilder("profile");
 
     const naturalFilters: ProfileFilterCriteria = {
       page,
@@ -268,14 +268,16 @@ class ProfileService {
       ...parseSearchQuery,
     };
 
-    const qb = await this.applyFilters(baseQuery, naturalFilters);
+    const filteredQuery = await this.applyFilters(baseQuery, naturalFilters);
 
-    const data = await qb.getMany();
+    const total = await filteredQuery.getCount();
+
+    const data = await filteredQuery.clone().skip(skip).take(limit).getMany();
     return {
       profiles: data.map((profile) => profileResponseSchema.parse(profile)),
       page: filters.page,
       limit: filters.limit,
-      total: data.length,
+      total,
     };
   }
 }
